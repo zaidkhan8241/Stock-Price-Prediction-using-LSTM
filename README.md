@@ -8,10 +8,11 @@ This notebook demonstrates an exploratory implementation of a Long Short-Term Me
 ---
 
 ## Dataset & Preprocessing
-- **Source:** Kaggle (`jacksoncrow/stock-market-dataset`), specifically the `CCOR.csv` ETF file.
+- **Dataset Link:** [Stock Market Dataset by Jackson Crow (Kaggle)](https://www.kaggle.com/datasets/jacksoncrow/stock-market-dataset)
+- **Target File:** `CCOR.csv` (ETF data)
 - **Target Variable:** Daily 'Close' price.
 - **Preprocessing:** 
-  - Dates parsed as datetime objects and set as index.
+  - Dates parsed as datetime objects and set as the index.
   - Feature scaled to a `[0, 1]` range using `MinMaxScaler` to aid neural network convergence.
 - **Split:** 65% Training, 35% Testing.
 
