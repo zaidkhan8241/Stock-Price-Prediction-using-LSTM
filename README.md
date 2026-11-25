@@ -1,153 +1,62 @@
-# 📈 Stock Price Prediction using LSTM
+# Stock Price Prediction using LSTM (Exploratory Analysis)
 
 ## Overview
+This notebook demonstrates an exploratory implementation of a Long Short-Term Memory (LSTM) neural network for **univariate** stock price forecasting. The model predicts the next day's 'Close' price based on a rolling 100-day historical window using historical market data.
 
-This project implements a **Long Short-Term Memory (LSTM)** neural network using **TensorFlow/Keras** to predict stock closing prices based on historical market data. The model learns temporal patterns from previous stock prices and forecasts future values using a sequence-based deep learning approach.
-
-The project demonstrates the complete workflow of a time series forecasting task, including data preprocessing, sequence generation, model training, evaluation, visualization, and future prediction.
-
----
-
-## Dataset
-
-**Source:** Kaggle – Stock Market Dataset
-
-**Dataset Link:**  
-https://www.kaggle.com/datasets/jacksoncrow/stock-market-dataset
-
-**File Used:** `CCOR.csv`
-
-**Target Variable:** Close Price
+> **⚠️ Disclaimer:** This project is for **educational and demonstrative purposes only**. Univariate LSTMs are not reliable for live trading, and this code should not be used as financial advice.
 
 ---
 
-## Features
-
-- Historical stock price forecasting using LSTM
-- Data preprocessing and normalization
-- Time-series sequence generation
-- Stacked LSTM model implementation
-- Model evaluation using RMSE
-- Visualization of actual vs predicted prices
-- Future stock price forecasting for the next 40 days
-
----
-
-## Technologies Used
-
-- Python
-- TensorFlow / Keras
-- NumPy
-- Pandas
-- Matplotlib
-- Scikit-learn
-- OpenDatasets
-
----
-
-## Workflow
-
-### 1. Data Collection
-
-- Download the dataset from Kaggle.
-- Load the `CCOR.csv` file.
-- Select the **Close** price column for forecasting.
-
-### 2. Data Preprocessing
-
-- Convert the Date column into datetime format.
-- Normalize stock prices using MinMaxScaler.
-- Split the dataset into training and testing sets.
-
-### 3. Time-Series Dataset Creation
-
-The dataset is transformed into sequential samples using a sliding window approach.
-
-- **Look-back Window:** 100 previous days
-- **Prediction Target:** Next day's closing price
-
-### 4. Model Development
-
-The model consists of:
-
-- Input Layer
-- LSTM Layer (128 units)
-- LSTM Layer (64 units)
-- Dense Layer (32 units, ReLU)
-- Output Layer (1 unit)
-
-The model is trained using:
-
-- **Optimizer:** Adam
-- **Loss Function:** Mean Squared Error (MSE)
-
-### 5. Model Evaluation
-
-After training, the model predicts stock prices on both training and testing datasets.
-
-Performance is evaluated using:
-
-- Mean Squared Error (MSE)
-- Root Mean Squared Error (RMSE)
-
-### 6. Visualization
-
-The project compares:
-
-- Original stock prices
-- Training predictions
-- Testing predictions
-
-using line plots for visual analysis.
-
-### 7. Future Forecasting
-
-The trained LSTM model forecasts the next **40 trading days** by recursively using previous predictions as inputs for future predictions.
+## Dataset & Preprocessing
+- **Source:** Kaggle (`jacksoncrow/stock-market-dataset`), specifically the `CCOR.csv` ETF file.
+- **Target Variable:** Daily 'Close' price.
+- **Preprocessing:** 
+  - Dates parsed as datetime objects and set as index.
+  - Feature scaled to a `[0, 1]` range using `MinMaxScaler` to aid neural network convergence.
+- **Split:** 65% Training, 35% Testing.
 
 ---
 
 ## Model Architecture
-
-```
-Input Layer
-      │
-      ▼
-LSTM (128 Units, return_sequences=True)
-      │
-      ▼
-LSTM (64 Units)
-      │
-      ▼
-Dense (32 Units, ReLU)
-      │
-      ▼
-Dense (1 Unit)
-```
+Built using TensorFlow/Keras with the following configuration:
+- **Input Shape:** `(100, 1)` → 100 time steps, 1 feature.
+- **LSTM Layer 1:** 128 units, `return_sequences=True`.
+- **LSTM Layer 2:** 64 units.
+- **Dense Layer:** 32 units, `relu` activation.
+- **Output Layer:** 1 unit, `sigmoid` activation *(Note: Constrains output to the 0–1 scaled range, which can cause vanishing gradients and limit prediction of boundary values).*
+- **Optimizer:** Adam (`learning_rate=0.001`).
+- **Loss Function:** Mean Squared Error (MSE).
 
 ---
 
 ## Evaluation Metrics
+- **Train RMSE:** ~0.159 
+- **Test RMSE:** ~0.490 
 
-The following metrics are used to evaluate model performance:
-
-- Mean Squared Error (MSE)
-- Root Mean Squared Error (RMSE)
-
----
-
-## Future Improvements
-
-- Bidirectional LSTM
-- GRU-based forecasting
-- Attention mechanism
-- Transformer models for time series forecasting
-- Multivariate stock prediction
-- Hyperparameter tuning
-- Comparison with ARIMA and Prophet
-- Deployment using Streamlit or Flask
+*Interpretation:* The Test RMSE represents an average error of roughly ~1.7% relative to the ~$28 stock price. However, the noticeable gap between Train and Test RMSE indicates **mild overfitting**, where the model memorizes training noise rather than generalizing perfectly.
 
 ---
 
-## Conclusion
+## Critical Limitations & Caveats
+Anyone reviewing or extending this code must be aware of the following methodological constraints:
 
-This project demonstrates an end-to-end implementation of stock price forecasting using a Long Short-Term Memory (LSTM) neural network. By learning patterns from historical stock prices, the model is able to generate accurate predictions and forecast future values. The project provides a strong foundation for understanding deep learning-based time series forecasting and can be extended with more advanced architectures and additional financial indicators.
+1. **Test Set Context Gap:** The data is split into train/test *before* the `create_dataset` function is applied. Because `time_step=100`, the model skips predicting the first 100 days of the test set, as it lacks the preceding training context. *(Recommended Fix: Define `test_data = scaled_data_array[split - time_step:]`)*.
+2. **Autoregressive Error Accumulation:** The 40-day future forecast iteratively feeds the model's own predictions back as inputs. In univariate LSTMs, this causes errors to compound rapidly, resulting in the observed "flattened" prediction curve (converging to a static mean). This is a mathematical artifact, not a realistic market forecast.
+3. **The "Naive Forecast" Trap:** LSTMs trained on univariate financial data frequently degenerate into naive forecasters, simply learning to output $P_t \approx P_{t-1}$. The seemingly low Test RMSE should always be benchmarked against a naive baseline (`predictions = actual_prices.shift(1)`) to verify true predictive value.
+4. **Lack of Exogenous Features:** The model relies *only* on past closing prices. It ignores trading volume, market sentiment, macroeconomic indicators, or broader market trends, which are essential for robust financial forecasting.
+
+---
+
+## How to Run
+1. Open the notebook in **Google Colab**.
+2. Run the first cell to install `opendatasets`.
+3. Provide your Kaggle username and API key when prompted to download the dataset.
+4. Execute all cells sequentially to reproduce the data loading, training, evaluation, and forecasting steps.
+
+---
+
+## Recommended Next Steps for Improvement
+- Change the final layer activation to `linear` for standard regression behavior.
+- Implement `tf.keras.callbacks.EarlyStopping` to prevent overfitting.
+- Add multivariate features (e.g., Volume, Moving Averages, RSI).
+- Compare model performance against a naive `shift(1)` baseline to prove actual learning.
